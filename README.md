@@ -24,6 +24,17 @@ This library requires the following peer dependencies:
 - `dayjs` ^1.11.0
 - `zustand` ^4.0.0
 
+## Initialization
+
+**Important:** You must register Handsontable modules before using cell types like `numeric` or `checkbox`. Add this to your app entry point (e.g., `main.tsx` or `App.tsx`):
+
+```tsx
+import { registerAllModules } from 'handsontable/registry';
+
+// Register all Handsontable modules (required for numeric, checkbox, etc.)
+registerAllModules();
+```
+
 ## Features
 
 - **Select Column Renderer**: Custom select dropdown with search, add new option, and dependent filtering
@@ -37,15 +48,25 @@ This library requires the following peer dependencies:
 ### Basic Setup
 
 ```tsx
+import { registerAllModules } from 'handsontable/registry';
 import { HotTable } from '@handsontable/react-wrapper';
-import { createTableSettings, createTextColumn, createSelectSimpleColumn } from 'handsontable-editor';
+import { 
+  createTableSettings, 
+  createTextColumn, 
+  createSelectSimpleColumn,
+  useAfterChange 
+} from 'handsontable-editor';
+import 'handsontable/dist/handsontable.full.min.css';
 import 'handsontable-editor/dist/styles.css';
 
+// Register Handsontable modules (required!)
+registerAllModules();
+
 function MyTable() {
-  const data = [
+  const [data, setData] = useState([
     { id: 1, name: 'John', status: 'active' },
     { id: 2, name: 'Jane', status: 'inactive' },
-  ];
+  ]);
 
   const columns = [
     createTextColumn({
@@ -56,12 +77,17 @@ function MyTable() {
     // ... more columns
   ];
 
+  // Simplified afterChange handler - automatically updates data
+  const afterChange = useAfterChange({
+    columns,
+    data,
+    setData,
+  });
+
   const settings = createTableSettings({
     data,
     columns,
-    afterChange: (changes) => {
-      console.log('Changes:', changes);
-    },
+    afterChange,
     beforeValidate: () => true,
   });
 
@@ -144,10 +170,10 @@ const columns = [
     readOnly: false,
   }),
 
-  // Numeric column
+  // Numeric column (requires registerAllModules())
   createNumericColumn('price', 'Price', 150),
 
-  // Boolean column
+  // Boolean column (requires registerAllModules())
   createBooleanColumn('isActive', 'Active', 100),
 
   // Action column
@@ -183,6 +209,102 @@ const settings = createTableSettings({
     console.log('Column resized:', column, newSize);
   },
 });
+```
+
+### Simplified afterChange Handler
+
+#### `useAfterChange(options)`
+
+React hook that simplifies handling table changes with advanced features like ID field mapping, field dependencies, and validation.
+
+**Options:**
+- `columns` (TableColumn[]): Array of column definitions
+- `data` (T[]): Current table data
+- `setData` (function): State setter function
+- `hotInstance` (any, optional): Handsontable instance for advanced features
+- `onChange` (function, optional): Callback fired for each change
+- `ignoreSources` (ChangeSource[], optional): Sources to ignore (default: ['loadData', 'updateData'])
+- `idFieldMap` (IdFieldMap, optional): Map name fields to ID fields (e.g., `{ consigneeName: 'consigneeId' }`)
+- `fieldDependencies` (FieldDependencies, optional): Clear related fields when a field changes (e.g., `{ forwarderName: ['driverName', 'truckName'] }`)
+- `validations` (Record<string, ValidationFunction>, optional): Custom validation per field
+- `useBatchedChanges` (boolean, optional): Use batched changes for better performance (requires hotInstance)
+- `onFieldCleared` (function, optional): Callback when a field and its dependencies are cleared
+
+**Basic Example:**
+```tsx
+const [data, setData] = useState([...]);
+
+const afterChange = useAfterChange({
+  columns,
+  data,
+  setData,
+  onChange: (row, prop, oldValue, newValue, updatedData) => {
+    console.log(`Changed ${prop} in row ${row}`);
+  },
+});
+```
+
+**Advanced Example with ID Mapping and Dependencies:**
+```tsx
+const hotTableRef = useRef(null);
+
+const afterChange = useAfterChange({
+  columns,
+  data,
+  setData,
+  hotInstance: hotTableRef.current?.hotInstance,
+  // Map name fields to ID fields - when name is cleared, ID is also cleared
+  idFieldMap: {
+    consigneeName: 'consigneeId',
+    driverName: 'driverId',
+    truckName: 'truckId',
+    forwarderName: 'fwdId',
+  },
+  // When forwarder changes, clear related fields
+  fieldDependencies: {
+    forwarderName: ['driverName', 'truckName', 'chassisName'],
+    consigneeName: ['stuffingPlaceName', 'disbursement'],
+  },
+  // Custom validation
+  validations: {
+    containerName: (row, prop, oldValue, newValue, hotInstance) => {
+      // Validate container number format
+      if (newValue && !/^[A-Z]{4}\d{7}$/.test(newValue)) {
+        return 'Invalid container number format';
+      }
+      return true;
+    },
+  },
+  useBatchedChanges: true, // Better performance
+  onFieldCleared: (row, prop, relatedFields) => {
+    console.log(`Cleared ${prop} and related fields:`, relatedFields);
+  },
+});
+```
+
+#### `createAfterChangeHandler(options)`
+
+Non-hook version for use outside React components. Supports all the same options as `useAfterChange`.
+
+**Example:**
+```tsx
+const afterChange = (changes, source) => {
+  createAfterChangeHandler({
+    changes,
+    source,
+    columns,
+    currentData: data,
+    hotInstance: hotTableRef.current?.hotInstance,
+    onUpdate: setData,
+    idFieldMap: {
+      consigneeName: 'consigneeId',
+    },
+    fieldDependencies: {
+      forwarderName: ['driverName', 'truckName'],
+    },
+    useBatchedChanges: true,
+  });
+};
 ```
 
 ## API Reference
@@ -258,4 +380,3 @@ You can override styles using CSS variables or by targeting the class names dire
 ## License
 
 MIT
-

@@ -10,6 +10,7 @@ export * from './store/datepicker.store';
 
 // Utils
 export * from './utils';
+export * from './utils/afterChange';
 
 // Components
 export * from './components/common';
@@ -29,6 +30,9 @@ export {
 // Config
 export * from './config/tableConfig';
 
+// Initialization
+export { initHandsontable } from './init';
+
 // Styles are imported automatically via tableConfig
-// Import them in your app: import '@table-editing/handsontable-components/dist/styles.css';
+// Import them in your app: import 'handsontable-editor/dist/styles.css';
 
