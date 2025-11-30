@@ -41,9 +41,19 @@ export const createContextMenu = ({
   if (enableCreate && onCreateRow) {
     items.row_above = {
       name: 'Insert row above',
-      callback: function (key: string, selection: any) {
+      callback: function (key: string, selection: any, clickEvent: MouseEvent) {
         const instance = this;
-        const startRow = selection[0]?.start?.row ?? selection[0]?.[0] ?? 0;
+        // Handsontable context menu selection format: [{from: {row, col}, to: {row, col}}]
+        let startRow = 0;
+        if (selection && selection.length > 0) {
+          if (selection[0].from) {
+            startRow = selection[0].from.row;
+          } else if (selection[0].start) {
+            startRow = selection[0].start.row;
+          } else if (Array.isArray(selection[0])) {
+            startRow = selection[0][0];
+          }
+        }
         onCreateRow(startRow);
       },
     };
@@ -52,9 +62,18 @@ export const createContextMenu = ({
   if (enableCreate && onCreateRow) {
     items.row_below = {
       name: 'Insert row below',
-      callback: function (key: string, selection: any) {
+      callback: function (key: string, selection: any, clickEvent: MouseEvent) {
         const instance = this;
-        const startRow = selection[0]?.start?.row ?? selection[0]?.[0] ?? 0;
+        let startRow = 0;
+        if (selection && selection.length > 0) {
+          if (selection[0].from) {
+            startRow = selection[0].from.row;
+          } else if (selection[0].start) {
+            startRow = selection[0].start.row;
+          } else if (Array.isArray(selection[0])) {
+            startRow = selection[0][0];
+          }
+        }
         onCreateRow(startRow + 1);
       },
     };
@@ -63,9 +82,18 @@ export const createContextMenu = ({
   if (enableDuplicate && onDuplicateRow) {
     items.duplicate_row = {
       name: 'Duplicate row',
-      callback: function (key: string, selection: any) {
+      callback: function (key: string, selection: any, clickEvent: MouseEvent) {
         const instance = this;
-        const startRow = selection[0]?.start?.row ?? selection[0]?.[0] ?? 0;
+        let startRow = 0;
+        if (selection && selection.length > 0) {
+          if (selection[0].from) {
+            startRow = selection[0].from.row;
+          } else if (selection[0].start) {
+            startRow = selection[0].start.row;
+          } else if (Array.isArray(selection[0])) {
+            startRow = selection[0][0];
+          }
+        }
         onDuplicateRow(startRow);
       },
     };
@@ -74,9 +102,18 @@ export const createContextMenu = ({
   if (enableDelete && onDeleteRow) {
     items.remove_row = {
       name: 'Remove row',
-      callback: function (key: string, selection: any) {
+      callback: function (key: string, selection: any, clickEvent: MouseEvent) {
         const instance = this;
-        const startRow = selection[0]?.start?.row ?? selection[0]?.[0] ?? 0;
+        let startRow = 0;
+        if (selection && selection.length > 0) {
+          if (selection[0].from) {
+            startRow = selection[0].from.row;
+          } else if (selection[0].start) {
+            startRow = selection[0].start.row;
+          } else if (Array.isArray(selection[0])) {
+            startRow = selection[0][0];
+          }
+        }
         onDeleteRow(startRow);
       },
       disabled: function () {
@@ -112,23 +149,40 @@ export const createNewRow = (
   defaultData: Record<string, any> = {},
   typeRowField: string = 'typeRow',
 ) => {
-  const currentData = instance.getData();
+  const columns = instance.getSettings().columns || [];
   const newRow: Record<string, any> = {
     ...defaultData,
     [typeRowField]: TYPE_ROW.CREATE,
   };
 
-  // Copy structure from existing row if available
-  if (currentData.length > 0 && currentData[0]) {
-    Object.keys(currentData[0]).forEach((key) => {
-      if (!(key in newRow)) {
-        newRow[key] = null;
+  // Initialize all column fields with null
+  columns.forEach((col: any) => {
+    if (col.data && !(col.data in newRow)) {
+      newRow[col.data] = null;
+    }
+  });
+
+  // Get current data - Handsontable with columns uses array of objects
+  const currentData = instance.getData();
+  const rowCount = instance.countRows();
+  
+  // Convert current data to array of objects
+  const dataAsObjects: Record<string, any>[] = [];
+  for (let i = 0; i < rowCount; i++) {
+    const rowObj: Record<string, any> = {};
+    columns.forEach((col: any) => {
+      if (col.data) {
+        rowObj[col.data] = instance.getDataAtRowProp(i, col.data);
       }
     });
+    dataAsObjects.push(rowObj);
   }
-
-  instance.alter('insert_row', rowIndex, 1);
-  instance.setDataAtRow(rowIndex, Object.values(newRow));
+  
+  // Insert the new row
+  dataAsObjects.splice(rowIndex, 0, newRow);
+  
+  // Update the table with new data
+  instance.loadData(dataAsObjects);
   
   return newRow;
 };
@@ -158,18 +212,44 @@ export const duplicateRow = (
   rowIndex: number,
   typeRowField: string = 'typeRow',
 ) => {
-  const rowData = instance.getDataAtRow(rowIndex);
-  const newRowData = [...rowData];
+  const columns = instance.getSettings().columns || [];
+  const duplicatedData: Record<string, any> = {};
+  
+  // Copy all data from the source row
+  columns.forEach((col: any) => {
+    if (col.data) {
+      duplicatedData[col.data] = instance.getDataAtRowProp(rowIndex, col.data);
+    }
+  });
   
   // Set typeRow to CREATE for duplicated row
-  const typeRowColIndex = instance.propToCol(typeRowField);
-  if (typeRowColIndex !== null && typeRowColIndex !== -1) {
-    newRowData[typeRowColIndex] = TYPE_ROW.CREATE;
+  duplicatedData[typeRowField] = TYPE_ROW.CREATE;
+  
+  // Reset ID if it exists (so it's a new row)
+  if (duplicatedData.id !== undefined) {
+    duplicatedData.id = null;
   }
 
-  instance.alter('insert_row', rowIndex + 1, 1);
-  instance.setDataAtRow(rowIndex + 1, newRowData);
+  // Get current data and convert to array of objects
+  const rowCount = instance.countRows();
+  const dataAsObjects: Record<string, any>[] = [];
+  for (let i = 0; i < rowCount; i++) {
+    const rowObj: Record<string, any> = {};
+    columns.forEach((col: any) => {
+      if (col.data) {
+        rowObj[col.data] = instance.getDataAtRowProp(i, col.data);
+      }
+    });
+    dataAsObjects.push(rowObj);
+  }
   
-  return newRowData;
+  // Insert the duplicated row
+  const insertIndex = rowIndex + 1;
+  dataAsObjects.splice(insertIndex, 0, duplicatedData);
+  
+  // Update the table with new data
+  instance.loadData(dataAsObjects);
+  
+  return duplicatedData;
 };
 
