@@ -87,6 +87,7 @@ export interface CreateTableSettingsProps {
   classNameMore?: string;
   manualColumnResize?: boolean | number[];
   afterColumnResize?: (newSize: number, column: number) => void;
+  contextMenu?: any;
 }
 
 export interface CustomBorders {

@@ -12,6 +12,8 @@ import {
   createCommonColumn,
   createActionColumn,
 } from './components/common';
+import { createStatusRowColumn } from './components/statusRow';
+import { createContextMenu, createNewRow, deleteRow, duplicateRow } from './utils/contextMenu';
 import { createTableSettings } from './config/tableConfig';
 import { useAfterChange, UseAfterChangeOptions } from './utils/afterChange';
 
@@ -195,6 +197,18 @@ export {
   createDatePickerColumn,
   type DatePickerRendererProps,
 } from './components/datePickerRenderer';
+export {
+  createStatusRowColumn,
+  setRowStatus,
+  getRowStatus,
+} from './components/statusRow';
+export {
+  createContextMenu,
+  createNewRow,
+  deleteRow,
+  duplicateRow,
+  type ContextMenuOptions,
+} from './utils/contextMenu';
 export * from './config/tableConfig';
 export * from './utils/afterChange';
 export * from './constants';

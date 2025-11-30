@@ -61,6 +61,7 @@ export const createTableSettings = ({
   classNameMore,
   manualColumnResize,
   afterColumnResize,
+  contextMenu,
 }: CreateTableSettingsProps): HotTableProps => ({
   ...(nestedHeaders ? { nestedHeaders } : { colHeaders }),
   data,
@@ -104,5 +105,6 @@ export const createTableSettings = ({
     columns: [],
   },
   currentRowClassName: 'current-row',
+  ...(contextMenu ? { contextMenu } : {}),
 });
 

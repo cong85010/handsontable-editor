@@ -11,6 +11,13 @@ export * from './store/datepicker.store';
 // Utils
 export * from './utils';
 export * from './utils/afterChange';
+export {
+  createContextMenu,
+  createNewRow,
+  deleteRow,
+  duplicateRow,
+  type ContextMenuOptions,
+} from './utils/contextMenu';
 
 // Components
 export * from './components/common';
@@ -26,6 +33,12 @@ export {
   type DatePickerRendererProps,
   type DatePickerCellProps,
 } from './components/datePickerRenderer';
+export {
+  createStatusRowColumn,
+  setRowStatus,
+  getRowStatus,
+} from './components/statusRow';
+export type { StatusRowColumnProps } from './components/statusRow';
 
 // Config
 export * from './config/tableConfig';
