@@ -30,6 +30,9 @@ export {
 // Config
 export * from './config/tableConfig';
 
+// Helpers - Easy-to-use functions (recommended for most users)
+export * from './helpers';
+
 // Initialization
 export { initHandsontable } from './init';
 

@@ -1,11 +1,29 @@
-import { SelectOption } from '../types';
-import { OPTIONS_ADD_NEW_PREFIX } from '../constants';
-import { Button, Divider, Flex, Form, Input, Select, Spin, Tooltip, Typography } from 'antd';
-import { ChevronDown, ChevronUp, List, Plus, RefreshCcw, Search, X } from 'lucide-react';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { useSelectOptionsStore } from '../store/select.store';
-import { defaultFilterOption, removeSpanTitle, sortOptions } from '../utils';
+import { SelectOption } from "../types";
+import { OPTIONS_ADD_NEW_PREFIX } from "../constants";
+import {
+  Button,
+  Divider,
+  Flex,
+  Form,
+  Input,
+  Select,
+  Spin,
+  Tooltip,
+  Typography,
+} from "antd";
+import {
+  ChevronDown,
+  ChevronUp,
+  List,
+  Plus,
+  RefreshCcw,
+  Search,
+  X,
+} from "lucide-react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { useSelectOptionsStore } from "../store/select.store";
+import { defaultFilterOption, removeSpanTitle, sortOptions } from "../utils";
 
 export interface SelectCellProps {
   value: string | undefined;
@@ -40,7 +58,12 @@ export interface SelectSimpleRendererProps {
   allowClear?: boolean;
   allowAddNew?: boolean;
   dependentOn?: string;
-  onChange?: (instance: any, row: number, value?: string, options?: SelectOption[]) => void;
+  onChange?: (
+    instance: any,
+    row: number,
+    value?: string,
+    options?: SelectOption[]
+  ) => void;
   ReactQueryProvider?: React.ComponentType<{ children: React.ReactNode }>;
   useQuery?: (options: {
     queryKey: any[];
@@ -58,32 +81,40 @@ export interface SelectSimpleRendererProps {
 }
 
 const DEFAULT_WIDTH = 150;
-const DEFAULT_PLACEHOLDER = 'Chọn';
+const DEFAULT_PLACEHOLDER = "Chọn";
 const Z_INDEX = 9999;
 
 const cellStyles = {
   container: (disabled: boolean) => ({
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    backgroundColor: disabled ? '#edf2fa' : 'transparent',
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    cursor: disabled ? "not-allowed" : "pointer",
+    backgroundColor: disabled ? "#edf2fa" : "transparent",
   }),
   select: {
-    width: '100%',
-    border: 'none',
-    background: 'transparent',
-    boxShadow: 'none',
-  },
-  popup: {
-    zIndex: Z_INDEX,
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    boxShadow: "none",
   },
 };
 
 const SelectCell = React.memo(
-  ({ value: labelShow, row, prop, instance, initialOpen = false, ReactQueryProvider, useQuery, invalidate }: SelectCellProps) => {
-    const getColumnConfig = useSelectOptionsStore((state) => state.getColumnConfig);
+  ({
+    value: labelShow,
+    row,
+    prop,
+    instance,
+    initialOpen = false,
+    ReactQueryProvider,
+    useQuery,
+    invalidate,
+  }: SelectCellProps) => {
+    const getColumnConfig = useSelectOptionsStore(
+      (state) => state.getColumnConfig
+    );
     const columnConfig = getColumnConfig(prop);
     const [form] = Form.useForm<{ newLabel: string }>();
 
@@ -98,9 +129,11 @@ const SelectCell = React.memo(
       onChange,
     } = columnConfig || {};
     const [isOpen, setIsOpen] = useState(initialOpen);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState("");
     const [isLoadAll, setIsLoadAll] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [manualOptions, setManualOptions] = useState<SelectOption[]>([]);
+    const [isLoadingManual, setIsLoadingManual] = useState(false);
     const selectRef = useRef<any>(null);
     const inputRef = useRef<any>(null);
     const searchInputRef = useRef<any>(null);
@@ -118,11 +151,17 @@ const SelectCell = React.memo(
       return instance.getDataAtRowProp(row, dependentOn);
     }, [instance, row, dependentOn, isOpen, refreshKey]);
 
-    const CORE_QUERY_KEY = useMemo(() => ['select-options', String(row), String(prop)], [row, prop]);
+    const CORE_QUERY_KEY = useMemo(
+      () => ["select-options", String(row), String(prop)],
+      [row, prop]
+    );
 
-    const queryKey = useMemo(() => [...CORE_QUERY_KEY, 'all'], [CORE_QUERY_KEY]);
+    const queryKey = useMemo(
+      () => [...CORE_QUERY_KEY, "all"],
+      [CORE_QUERY_KEY]
+    );
 
-    // Use provided useQuery hook or fallback to simple fetch
+    // Use provided useQuery hook or fallback to manual fetch
     const queryResult = useQuery
       ? useQuery({
           queryKey,
@@ -135,51 +174,89 @@ const SelectCell = React.memo(
           select: (data: any) => sortOptions(data),
         })
       : {
-          data: [],
-          isFetching: false,
-          isLoading: false,
+          data: manualOptions,
+          isFetching: isLoadingManual,
+          isLoading: isLoadingManual,
         };
 
     const { data: allOptions = [], isFetching, isLoading } = queryResult;
+
+    // Manual fetch when useQuery is not provided
+    React.useEffect(() => {
+      if (
+        !useQuery &&
+        getOptions &&
+        isOpen &&
+        manualOptions.length === 0 &&
+        !isLoadingManual
+      ) {
+        setIsLoadingManual(true);
+        getOptions()
+          .then((options) => {
+            const sorted = sortOptions(options);
+            setManualOptions(sorted);
+          })
+          .catch((error) => {
+            console.error("Error fetching options:", error);
+            setManualOptions([]);
+          })
+          .finally(() => {
+            setIsLoadingManual(false);
+          });
+      }
+    }, [useQuery, getOptions, isOpen, manualOptions.length, isLoadingManual]);
 
     const displayValue = useMemo(() => {
       if (idValue && String(idValue).startsWith(OPTIONS_ADD_NEW_PREFIX)) {
         return idValue;
       }
       if (allOptions && allOptions.length > 0 && idValue) {
-        const optionExists = allOptions.some((opt: SelectOption) => opt.value === idValue);
+        const optionExists = allOptions.some(
+          (opt: SelectOption) => opt.value === idValue
+        );
         return optionExists ? idValue : currentDisplayValue || undefined;
       }
       return currentDisplayValue || undefined;
     }, [idValue, allOptions, currentDisplayValue]);
 
     const totalOptions = useMemo(() => {
-      let processedOptions = (allOptions || []).map((opt: SelectOption & { fwdShortName?: string; fwdId?: string | number }) => {
-        let label = opt.label;
-        if (isLoadAll && opt.fwdShortName) {
-          label = `${opt.label} (${opt.fwdShortName})`;
+      let processedOptions = (allOptions || []).map(
+        (
+          opt: SelectOption & { fwdShortName?: string; fwdId?: string | number }
+        ) => {
+          let label = opt.label;
+          if (isLoadAll && opt.fwdShortName) {
+            label = `${opt.label} (${opt.fwdShortName})`;
+          }
+          return {
+            ...opt,
+            label,
+          };
         }
-        return {
-          ...opt,
-          label,
-        };
-      });
+      );
 
       if (dependentOn && parentValue && !isLoadAll) {
         processedOptions = processedOptions.filter((opt: any) => {
-          return String(opt.fwdId) === String(parentValue) || String(opt.value) === String(idValue);
+          return (
+            String(opt.fwdId) === String(parentValue) ||
+            String(opt.value) === String(idValue)
+          );
         });
       }
 
       const uniqueOptions = processedOptions.filter(
         (opt: SelectOption, index: number, arr: SelectOption[]) =>
-          arr.findIndex((item: SelectOption) => String(item.value) === String(opt.value)) === index,
+          arr.findIndex(
+            (item: SelectOption) => String(item.value) === String(opt.value)
+          ) === index
       );
 
       let newlyAddedOption: SelectOption | null = null;
       if (idValue && currentDisplayValue) {
         const isNewlyAdded = String(idValue).startsWith(OPTIONS_ADD_NEW_PREFIX);
-        const existsInOptions = (allOptions || []).some((opt: SelectOption) => String(opt.value) === String(idValue));
+        const existsInOptions = (allOptions || []).some(
+          (opt: SelectOption) => String(opt.value) === String(idValue)
+        );
 
         if (isNewlyAdded || (dependentOn && !existsInOptions)) {
           let label = currentDisplayValue;
@@ -198,22 +275,40 @@ const SelectCell = React.memo(
       }
 
       const filteredOptions = newlyAddedOption
-        ? uniqueOptions.filter((opt: SelectOption) => String(opt.value) !== String(newlyAddedOption!.value))
+        ? uniqueOptions.filter(
+            (opt: SelectOption) =>
+              String(opt.value) !== String(newlyAddedOption!.value)
+          )
         : uniqueOptions;
 
-      return newlyAddedOption ? [newlyAddedOption, ...filteredOptions] : filteredOptions;
-    }, [allOptions, idValue, currentDisplayValue, isLoadAll, dependentOn, parentValue]);
+      return newlyAddedOption
+        ? [newlyAddedOption, ...filteredOptions]
+        : filteredOptions;
+    }, [
+      allOptions,
+      idValue,
+      currentDisplayValue,
+      isLoadAll,
+      dependentOn,
+      parentValue,
+    ]);
 
     const options = useMemo(() => {
       if (!searchQuery.trim()) return totalOptions;
-      return totalOptions.filter((option: SelectOption) => defaultFilterOption(searchQuery, option));
+      return totalOptions.filter((option: SelectOption) =>
+        defaultFilterOption(searchQuery, option)
+      );
     }, [totalOptions, searchQuery]);
 
     const handleChange = useCallback(
       (newValue: string | undefined) => {
         try {
-          const originalOption = (allOptions || []).find((opt: SelectOption) => String(opt.value) === String(newValue));
-          const label = originalOption?.label || options?.find((opt: SelectOption) => opt.value === newValue)?.label;
+          const originalOption = (allOptions || []).find(
+            (opt: SelectOption) => String(opt.value) === String(newValue)
+          );
+          const label =
+            originalOption?.label ||
+            options?.find((opt: SelectOption) => opt.value === newValue)?.label;
 
           instance.batch(() => {
             instance.setDataAtRowProp(row, idField, newValue);
@@ -224,15 +319,15 @@ const SelectCell = React.memo(
             onChange(instance, row, newValue, options);
           }
         } catch (error) {
-          console.error('Error setting data at row prop:', error);
+          console.error("Error setting data at row prop:", error);
         }
       },
-      [instance, row, prop, options, allOptions, idField, onChange],
+      [instance, row, prop, options, allOptions, idField, onChange]
     );
 
     const handleDropdownClose = useCallback(() => {
       setIsOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setIsLoadAll(false);
     }, []);
 
@@ -240,10 +335,14 @@ const SelectCell = React.memo(
       (e: React.KeyboardEvent) => {
         if (!isOpen) return;
         const target = e.target as HTMLElement | null;
-        const isCreateNewInput = target?.tagName === 'INPUT' && (target as HTMLInputElement).name === 'newLabel';
-        const isSearchInput = target?.tagName === 'INPUT' && (target as HTMLInputElement).name === 'searchQuery';
+        const isCreateNewInput =
+          target?.tagName === "INPUT" &&
+          (target as HTMLInputElement).name === "newLabel";
+        const isSearchInput =
+          target?.tagName === "INPUT" &&
+          (target as HTMLInputElement).name === "searchQuery";
 
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
           if (isCreateNewInput || isSearchInput) {
             e.stopPropagation();
             return;
@@ -252,13 +351,19 @@ const SelectCell = React.memo(
           return;
         }
 
-        if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (e.key === "Delete" || e.key === "Backspace") {
           const tag = target?.tagName;
-          const isInputLike = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
+          const isInputLike =
+            tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable;
 
           if (isInputLike) {
-            const inputValue = (target as HTMLInputElement).value ?? '';
-            if (!disabled && allowClear && inputValue.length === 0 && !isSearchInput) {
+            const inputValue = (target as HTMLInputElement).value ?? "";
+            if (
+              !disabled &&
+              allowClear &&
+              inputValue.length === 0 &&
+              !isSearchInput
+            ) {
               e.preventDefault();
               e.stopPropagation();
               handleChange(undefined);
@@ -272,7 +377,7 @@ const SelectCell = React.memo(
           e.stopPropagation();
         }
       },
-      [disabled, allowClear, handleChange, isOpen],
+      [disabled, allowClear, handleChange, isOpen]
     );
 
     const handleClearValue = useCallback(() => {
@@ -293,16 +398,23 @@ const SelectCell = React.memo(
         onClear: handleClearValue,
         filterOption: false,
         style: cellStyles.select,
-        popupStyle: cellStyles.popup,
-        className: 'select-input-custom group',
+        className: "select-input-custom group",
       }),
-      [handleChange, handleKeyDown, options, disabled, placeholder, allowClear, handleClearValue],
+      [
+        handleChange,
+        handleKeyDown,
+        options,
+        disabled,
+        placeholder,
+        allowClear,
+        handleClearValue,
+      ]
     );
 
     const maxLabelLength = useMemo(() => {
       return (
         totalOptions?.reduce((max: number, option: SelectOption) => {
-          const label = typeof option.label === 'string' ? option.label : '';
+          const label = typeof option.label === "string" ? option.label : "";
           return Math.max(max, label.length);
         }, 0) || 0
       );
@@ -316,13 +428,27 @@ const SelectCell = React.memo(
     const handleRefreshOptions = useCallback(() => {
       if (invalidate) {
         invalidate({ queryKey: CORE_QUERY_KEY });
+      } else if (getOptions) {
+        // Manual refresh when useQuery is not provided
+        setIsLoadingManual(true);
+        getOptions()
+          .then((options) => {
+            const sorted = sortOptions(options);
+            setManualOptions(sorted);
+          })
+          .catch((error) => {
+            console.error("Error refreshing options:", error);
+          })
+          .finally(() => {
+            setIsLoadingManual(false);
+          });
       }
-      setSearchQuery('');
-    }, [invalidate, CORE_QUERY_KEY]);
+      setSearchQuery("");
+    }, [invalidate, CORE_QUERY_KEY, getOptions]);
 
     const handleLoadAll = useCallback(() => {
       setIsLoadAll((prev) => !prev);
-      setSearchQuery('');
+      setSearchQuery("");
     }, []);
 
     const handleAddNewOption = useCallback(
@@ -338,39 +464,53 @@ const SelectCell = React.memo(
             setRefreshKey((prev) => prev + 1);
             form.resetFields();
           } catch (error) {
-            console.error('Error adding new option:', error);
+            console.error("Error adding new option:", error);
           }
         }
       },
-      [allowAddNew, idField, instance, prop, row, form],
+      [allowAddNew, idField, instance, prop, row, form]
     );
 
     const cellContent = (
-      <div style={cellStyles.container(disabled)} onKeyDown={handleKeyDown} tabIndex={disabled ? -1 : 0} data-id={idField}>
+      <div
+        style={cellStyles.container(disabled)}
+        onKeyDown={handleKeyDown}
+        tabIndex={disabled ? -1 : 0}
+        data-id={idField}
+      >
         <Select
           {...selectProps}
           value={displayValue}
           open={isOpen}
-          onOpenChange={handleDropdownClose}
-          loading={isLoading}
-          onDropdownVisibleChange={(open) => {
+          onOpenChange={(open) => {
             if (!open) {
-              setIsOpen(false);
+              handleDropdownClose();
+            } else {
+              setIsOpen(true);
             }
           }}
+          loading={isLoading}
           styles={{
             popup: {
               root: {
                 right: 0,
                 minWidth: dropdownWidth,
+                zIndex: Z_INDEX,
               },
             },
           }}
           suffixIcon={
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', pointerEvents: 'auto' }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+                pointerEvents: "auto",
+              }}
+            >
               {allowClear && (
                 <X
-                  className='text-gray-400 cursor-pointer hover:text-gray-600 transition-colors !hidden group-hover:!block bg-gray-50 rounded-full'
+                  className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors !hidden group-hover:!block bg-gray-50 rounded-full"
                   size={14}
                   onClick={(e) => {
                     e.preventDefault();
@@ -381,7 +521,7 @@ const SelectCell = React.memo(
               )}
               {isOpen ? (
                 <ChevronUp
-                  className='text-gray-500 cursor-pointer hover:text-gray-700 transition-colors rounded-full '
+                  className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors rounded-full "
                   size={16}
                   onClick={(e) => {
                     e.preventDefault();
@@ -391,7 +531,7 @@ const SelectCell = React.memo(
                 />
               ) : (
                 <ChevronDown
-                  className='text-gray-500 cursor-pointer hover:text-gray-700 transition-colors rounded-full '
+                  className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors rounded-full "
                   size={16}
                   onClick={(e) => {
                     e.preventDefault();
@@ -406,75 +546,80 @@ const SelectCell = React.memo(
             <Spin spinning={isFetching}>
               <Input
                 ref={searchInputRef}
-                placeholder='Tìm kiếm...'
-                name='searchQuery'
+                placeholder="Tìm kiếm..."
+                name="searchQuery"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                prefix={<Search className='text-gray-400' size={16} />}
+                prefix={<Search className="text-gray-400" size={16} />}
                 suffix={
                   searchQuery && (
                     <X
-                      className='text-gray-400 cursor-pointer hover:text-gray-600 transition-colors'
+                      className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
                       size={14}
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => setSearchQuery("")}
                     />
                   )
                 }
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     e.stopPropagation();
                     e.preventDefault();
                   }
                 }}
                 autoFocus
               />
-              <Divider style={{ margin: '8px 0' }} />
-              <Flex justify='between' align='center' gap={8}>
-                <div className='flex flex-col flex-1 text-sm px-2'>
-                  {isLoadAll && dependentOn && <span className='text-xs text-blue-600 font-medium'>Tất cả danh sách</span>}
+              <Divider style={{ margin: "8px 0" }} />
+              <Flex justify="between" align="center" gap={8}>
+                <div className="flex flex-col flex-1 text-sm px-2">
+                  {isLoadAll && dependentOn && (
+                    <span className="text-xs text-blue-600 font-medium">
+                      Tất cả danh sách
+                    </span>
+                  )}
                   <Typography.Text>
-                    Danh sách ({options?.length || 0}/{totalOptions?.length || 0})
+                    Danh sách ({options?.length || 0}/
+                    {totalOptions?.length || 0})
                   </Typography.Text>
                 </div>
                 <Flex gap={4}>
                   {dependentOn && parentValue && (
-                    <Tooltip title='Tất cả danh sách'>
+                    <Tooltip title="Tất cả danh sách">
                       <Button
-                        type='text'
-                        size='small'
-                        icon={<List className='text-green-600 size-4' />}
+                        type="text"
+                        size="small"
+                        icon={<List className="text-green-600 size-4" />}
                         onClick={handleLoadAll}
-                        className={isLoadAll ? 'bg-green-50' : ''}
+                        className={isLoadAll ? "bg-green-50" : ""}
                       />
                     </Tooltip>
                   )}
-                  <Tooltip title='Làm mới dữ liệu'>
+                  <Tooltip title="Làm mới dữ liệu">
                     <Button
-                      type='text'
-                      size='small'
-                      icon={<RefreshCcw className='text-blue-600 size-4' />}
+                      type="text"
+                      size="small"
+                      icon={<RefreshCcw className="text-blue-600 size-4" />}
                       onClick={handleRefreshOptions}
                     />
                   </Tooltip>
                 </Flex>
               </Flex>
-              <Divider style={{ margin: '8px 0' }} />
+              <Divider style={{ margin: "8px 0" }} />
               {menu}
               {allowAddNew && (
                 <Form form={form} onFinish={handleAddNewOption}>
-                  <Divider style={{ margin: '8px 0' }} />
-                  <Form.Item name='newLabel' className='!m-0'>
+                  <Divider style={{ margin: "8px 0" }} />
+                  <Form.Item name="newLabel" className="!m-0">
                     <Input
-                      placeholder={`${placeholder.replace('Chọn', 'Nhập')} mới`}
-                      name='newLabel'
+                      placeholder={`${placeholder.replace("Chọn", "Nhập")} mới`}
+                      name="newLabel"
                       prefix={
-                        <Tooltip title='Nhấn enter để thêm mới'>
-                          <Plus className='text-blue-600' />
+                        <Tooltip title="Nhấn enter để thêm mới">
+                          <Plus className="text-blue-600" />
                         </Tooltip>
                       }
                       ref={inputRef}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.stopPropagation();
                           e.preventDefault();
                           form.submit();
@@ -490,7 +635,11 @@ const SelectCell = React.memo(
       </div>
     );
 
-    return ReactQueryProvider ? <ReactQueryProvider>{cellContent}</ReactQueryProvider> : cellContent;
+    return ReactQueryProvider ? (
+      <ReactQueryProvider>{cellContent}</ReactQueryProvider>
+    ) : (
+      cellContent
+    );
   },
   (prevProps, nextProps) => {
     return (
@@ -500,10 +649,10 @@ const SelectCell = React.memo(
       prevProps.instance === nextProps.instance &&
       prevProps.initialOpen === nextProps.initialOpen
     );
-  },
+  }
 );
 
-SelectCell.displayName = 'SelectCell';
+SelectCell.displayName = "SelectCell";
 
 export function createSelectSimpleColumn({
   data,
@@ -534,25 +683,33 @@ export function createSelectSimpleColumn({
 
   return {
     data,
-    type: 'text',
+    type: "text",
     width,
-    className: '',
+    className: "",
     readOnly: disabled,
     editor: false,
     title,
-    renderer: (instance: any, td: any, row: number, _col: number, prop: any, value: any) => {
+    renderer: (
+      instance: any,
+      td: any,
+      row: number,
+      _col: number,
+      prop: any,
+      value: any
+    ) => {
       if (!td._isActive) {
-        td.innerHTML = '';
-        td.style.position = 'relative';
-        td.style.cursor = disabled ? 'not-allowed' : 'pointer';
-        td.style.backgroundColor = disabled ? '#edf2fa' : 'transparent';
+        td.innerHTML = "";
+        td.style.position = "relative";
+        td.style.cursor = disabled ? "not-allowed" : "pointer";
+        td.style.backgroundColor = disabled ? "#edf2fa" : "transparent";
 
         if (!value) {
-          const placeholderText = placeholder || `Chọn ${removeSpanTitle(title)}`;
-          const placeholderSpan = document.createElement('span');
+          const placeholderText =
+            placeholder || `Chọn ${removeSpanTitle(title)}`;
+          const placeholderSpan = document.createElement("span");
           placeholderSpan.textContent = placeholderText;
-          placeholderSpan.style.color = '#bfbfbf';
-          placeholderSpan.style.fontStyle = 'normal';
+          placeholderSpan.style.color = "#bfbfbf";
+          placeholderSpan.style.fontStyle = "normal";
           td.appendChild(placeholderSpan);
         } else {
           const textNode = document.createTextNode(value);
@@ -563,11 +720,11 @@ export function createSelectSimpleColumn({
           if (disabled) return;
 
           td._isActive = true;
-          td.innerHTML = '';
+          td.innerHTML = "";
 
-          const container = document.createElement('div');
-          container.style.width = '100%';
-          container.style.height = '100%';
+          const container = document.createElement("div");
+          container.style.width = "100%";
+          container.style.height = "100%";
           td.appendChild(container);
 
           const root = createRoot(container);
@@ -587,9 +744,9 @@ export function createSelectSimpleColumn({
           td._selectRoot = root;
         };
 
-        td.removeEventListener('dblclick', td._handleDoubleClick);
+        td.removeEventListener("dblclick", td._handleDoubleClick);
         td._handleDoubleClick = handleDoubleClick;
-        td.addEventListener('dblclick', handleDoubleClick);
+        td.addEventListener("dblclick", handleDoubleClick);
 
         return td;
       }
@@ -617,7 +774,7 @@ export function createSelectSimpleColumn({
           delete td._selectRoot;
         }
         if (td._handleDoubleClick) {
-          td.removeEventListener('dblclick', td._handleDoubleClick);
+          td.removeEventListener("dblclick", td._handleDoubleClick);
           delete td._handleDoubleClick;
         }
         delete td._isActive;
@@ -625,4 +782,3 @@ export function createSelectSimpleColumn({
     },
   };
 }
-

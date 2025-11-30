@@ -2,6 +2,8 @@
 
 A reusable npm library providing Handsontable components and utilities for React projects. This library includes custom renderers for select dropdowns, date pickers, and common column types.
 
+**✨ Easy to use - Just install and start coding!**
+
 ## Installation
 
 ```bash
@@ -42,6 +44,45 @@ registerAllModules();
 - **Common Column Types**: Text, numeric, boolean, action, and common column creators
 - **Table Configuration**: Pre-configured Handsontable settings
 - **Utilities**: Helper functions for date formatting, sorting, and more
+
+## Quick Start (Simplest Way)
+
+```tsx
+import { registerAllModules } from 'handsontable/registry';
+import { HotTable } from '@handsontable/react-wrapper';
+import { createQuickTable, createSelectColumn, ColumnPresets } from 'handsontable-editor';
+import 'handsontable/dist/handsontable.full.min.css';
+import 'handsontable-editor/dist/styles.css';
+
+registerAllModules();
+
+function MyTable() {
+  const [data, setData] = useState([
+    { id: 1, name: 'Product A', price: 100, statusId: '1', statusName: 'Active' },
+  ]);
+
+  const columns = [
+    ColumnPresets.id(),
+    ColumnPresets.name(),
+    ColumnPresets.price(),
+    createSelectColumn('statusName', 'statusId', 'Status', [
+      { value: '1', label: 'Active' },
+      { value: '2', label: 'Inactive' },
+    ]),
+  ];
+
+  const settings = createQuickTable({
+    data,
+    columns,
+    onDataChange: setData,
+    idFieldMap: { statusName: 'statusId' },
+  });
+
+  return <HotTable {...settings} />;
+}
+```
+
+That's it! No complex setup needed.
 
 ## Usage
 
