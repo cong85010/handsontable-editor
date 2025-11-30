@@ -26,8 +26,11 @@ export default [
     plugins: [
       resolve({
         browser: true,
+        preferBuiltins: false,
       }),
-      commonjs(),
+      commonjs({
+        exclude: ['node_modules/react/**', 'node_modules/react-dom/**'],
+      }),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
@@ -37,16 +40,37 @@ export default [
         minimize: true,
       }),
     ],
-    external: [
-      'react',
-      'react-dom',
-      'handsontable',
-      '@handsontable/react-wrapper',
-      'antd',
-      'dayjs',
-      'zustand',
-      'lucide-react',
-    ],
+    external: (id) => {
+      // Externalize React and all its submodules (including jsx-runtime)
+      if (
+        id === 'react' ||
+        id === 'react-dom' ||
+        id === 'react/jsx-runtime' ||
+        id === 'react/jsx-dev-runtime' ||
+        id.startsWith('react/') ||
+        id.startsWith('react-dom/')
+      ) {
+        return true;
+      }
+      // Externalize other peer dependencies
+      if (
+        id === 'handsontable' ||
+        id.startsWith('handsontable/') ||
+        id === '@handsontable/react-wrapper' ||
+        id.startsWith('@handsontable/') ||
+        id === 'antd' ||
+        id.startsWith('antd/') ||
+        id === 'dayjs' ||
+        id.startsWith('dayjs/') ||
+        id === 'zustand' ||
+        id.startsWith('zustand/') ||
+        id === 'lucide-react' ||
+        id.startsWith('lucide-react/')
+      ) {
+        return true;
+      }
+      return false;
+    },
   },
   {
     input: 'src/index.ts',
