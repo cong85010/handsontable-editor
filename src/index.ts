@@ -16,6 +16,7 @@ export {
   createNewRow,
   deleteRow,
   duplicateRow,
+  getTableDataAsObjects,
   type ContextMenuOptions,
 } from './utils/contextMenu';
 
