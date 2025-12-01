@@ -112,10 +112,7 @@ const SelectCell = React.memo(
     useQuery,
     invalidate,
   }: SelectCellProps) => {
-    const getColumnConfig = useSelectOptionsStore(
-      (state) => state.getColumnConfig
-    );
-    const columnConfig = getColumnConfig(prop);
+    const columnConfig = useSelectOptionsStore.getState().getColumnConfig(prop);
     const [form] = Form.useForm<{ newLabel: string }>();
 
     const {

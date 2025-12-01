@@ -31,8 +31,7 @@
     "handsontable": "^15.0.0",
     "@handsontable/react-wrapper": "^15.0.0",
     "antd": "^5.0.0",
-    "dayjs": "^1.11.0",
-    "zustand": "^4.0.0"
+    "dayjs": "^1.11.0"
   },
   "dependencies": {
     "lucide-react": "^0.485.0"

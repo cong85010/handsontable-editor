@@ -24,7 +24,6 @@ This library requires the following peer dependencies:
 - `@handsontable/react-wrapper` ^15.0.0
 - `antd` ^5.0.0
 - `dayjs` ^1.11.0
-- `zustand` ^4.0.0
 
 ## Initialization
 

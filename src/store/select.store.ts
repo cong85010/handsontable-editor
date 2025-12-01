@@ -1,44 +1,57 @@
-import { create } from 'zustand';
 import { SelectOption } from '../types';
 
+export interface SelectColumnConfig {
+  getOptions?: (parentValue?: string | number) => Promise<SelectOption[]>;
+  disabled?: boolean;
+  placeholder?: string;
+  allowClear?: boolean;
+  idField?: string;
+  onChange?: (instance: any, row: number, value?: string, options?: any) => void;
+  allowAddNew?: boolean;
+  dependentOn?: string;
+}
+
 export interface SelectOptionsRegistry {
-  [columnKey: string]: {
-    getOptions?: (parentValue?: string | number) => Promise<SelectOption[]>;
-    disabled?: boolean;
-    placeholder?: string;
-    allowClear?: boolean;
-    idField?: string;
-    onChange?: (instance: any, row: number, value?: string, options?: any) => void;
-    allowAddNew?: boolean;
-    dependentOn?: string;
-  };
+  [columnKey: string]: SelectColumnConfig;
 }
 
-export interface SelectOptionsStore {
-  registry: SelectOptionsRegistry;
-  registerColumn: (columnKey: string, config: SelectOptionsRegistry[string]) => void;
-  unregisterColumn: (columnKey: string) => void;
-  getColumnConfig: (columnKey: string) => SelectOptionsRegistry[string] | undefined;
-}
+/**
+ * Module-level registry for select column configurations
+ * This stores configuration for each select column by its data key
+ */
+const selectOptionsRegistry: SelectOptionsRegistry = {};
 
-export const useSelectOptionsStore = create<SelectOptionsStore>((set, get) => ({
-  registry: {},
-  registerColumn: (columnKey, config) => {
-    set((state) => ({
-      registry: {
-        ...state.registry,
-        [columnKey]: config,
-      },
-    }));
-  },
-  unregisterColumn: (columnKey) => {
-    set((state) => {
-      const { [columnKey]: removed, ...rest } = state.registry;
-      return { registry: rest };
-    });
-  },
-  getColumnConfig: (columnKey) => {
-    return get().registry[columnKey];
-  },
-}));
+/**
+ * Register a select column configuration
+ */
+export const registerColumn = (columnKey: string, config: SelectColumnConfig): void => {
+  selectOptionsRegistry[columnKey] = config;
+};
+
+/**
+ * Unregister a select column configuration
+ */
+export const unregisterColumn = (columnKey: string): void => {
+  delete selectOptionsRegistry[columnKey];
+};
+
+/**
+ * Get configuration for a select column
+ */
+export const getColumnConfig = (columnKey: string): SelectColumnConfig | undefined => {
+  return selectOptionsRegistry[columnKey];
+};
+
+/**
+ * Store interface for backwards compatibility
+ * @deprecated Use the direct functions instead
+ */
+export const useSelectOptionsStore = {
+  getState: () => ({
+    registry: selectOptionsRegistry,
+    registerColumn,
+    unregisterColumn,
+    getColumnConfig,
+  }),
+};
 

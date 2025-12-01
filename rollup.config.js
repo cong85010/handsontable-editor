@@ -62,8 +62,6 @@ export default [
         id.startsWith('antd/') ||
         id === 'dayjs' ||
         id.startsWith('dayjs/') ||
-        id === 'zustand' ||
-        id.startsWith('zustand/') ||
         id === 'lucide-react' ||
         id.startsWith('lucide-react/')
       ) {
@@ -87,7 +85,6 @@ export default [
       '@handsontable/react-wrapper',
       'antd',
       'dayjs',
-      'zustand',
       'lucide-react',
     ],
   },

@@ -4,9 +4,21 @@ export * from './types';
 // Constants
 export * from './constants';
 
-// Stores
-export * from './store/select.store';
-export * from './store/datepicker.store';
+// Stores - use namespaced exports to avoid conflicts
+export {
+  useSelectOptionsStore,
+  registerColumn as registerSelectColumn,
+  unregisterColumn as unregisterSelectColumn,
+  getColumnConfig as getSelectColumnConfig,
+  type SelectColumnConfig,
+  type SelectOptionsRegistry,
+} from './store/select.store';
+export {
+  useDatePickerStore,
+  registerColumn as registerDatePickerColumn,
+  getColumnConfig as getDatePickerColumnConfig,
+  type DatePickerColumnConfig,
+} from './store/datepicker.store';
 
 // Utils
 export * from './utils';

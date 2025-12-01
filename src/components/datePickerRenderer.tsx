@@ -95,7 +95,7 @@ const parseDateValue = (value: any): Dayjs | null => {
 
 const DatePickerCell = React.memo(
   ({ value, row, prop, instance, initialOpen = false }: DatePickerCellProps) => {
-    const columnConfig = useDatePickerStore(useCallback((state) => state.columnConfigs[prop], [prop]));
+    const columnConfig = useDatePickerStore.getState().getColumnConfig(prop);
 
     const {
       showTime = false,

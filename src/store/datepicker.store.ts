@@ -1,5 +1,4 @@
 import { Dayjs } from 'dayjs';
-import { create } from 'zustand';
 
 export interface DatePickerColumnConfig {
   format?: string;
@@ -11,24 +10,35 @@ export interface DatePickerColumnConfig {
   onDateChange?: (date: Dayjs | null, dateString: string, rowIndex: number, column: string) => void;
 }
 
-interface DatePickerStoreState {
-  columnConfigs: Record<string, DatePickerColumnConfig>;
-  registerColumn: (columnName: string, config: DatePickerColumnConfig) => void;
-  getColumnConfig: (columnName: string) => DatePickerColumnConfig | undefined;
-}
+/**
+ * Module-level registry for date picker column configurations
+ * This stores configuration for each date picker column by its data key
+ */
+const datePickerColumnConfigs: Record<string, DatePickerColumnConfig> = {};
 
-export const useDatePickerStore = create<DatePickerStoreState>((set, get) => ({
-  columnConfigs: {},
-  registerColumn: (columnName: string, config: DatePickerColumnConfig) => {
-    set((state) => ({
-      columnConfigs: {
-        ...state.columnConfigs,
-        [columnName]: config,
-      },
-    }));
-  },
-  getColumnConfig: (columnName: string) => {
-    return get().columnConfigs[columnName];
-  },
-}));
+/**
+ * Register a date picker column configuration
+ */
+export const registerColumn = (columnName: string, config: DatePickerColumnConfig): void => {
+  datePickerColumnConfigs[columnName] = config;
+};
+
+/**
+ * Get configuration for a date picker column
+ */
+export const getColumnConfig = (columnName: string): DatePickerColumnConfig | undefined => {
+  return datePickerColumnConfigs[columnName];
+};
+
+/**
+ * Store interface for backwards compatibility
+ * @deprecated Use the direct functions instead
+ */
+export const useDatePickerStore = {
+  getState: () => ({
+    columnConfigs: datePickerColumnConfigs,
+    registerColumn,
+    getColumnConfig,
+  }),
+};
 
