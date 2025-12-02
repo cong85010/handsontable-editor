@@ -1,0 +1,25 @@
+{
+  "name": "handsontable-editor-examples",
+  "version": "1.0.0",
+  "description": "Example demos for handsontable-editor library",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Copy examples to your React/Next.js project to run them'",
+    "info": "echo 'See README.md for usage instructions'"
+  },
+  "dependencies": {
+    "handsontable-editor": "^2.0.0",
+    "handsontable": "^15.0.0",
+    "@handsontable/react-wrapper": "^15.0.0",
+    "antd": "^5.0.0",
+    "dayjs": "^1.11.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.3.3"
+  }
+}
+

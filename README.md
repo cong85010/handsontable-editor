@@ -653,6 +653,27 @@ import { SelectCountRow } from 'handsontable-editor';
 />
 ```
 
+## Live Examples
+
+Check out the `/examples` directory for comprehensive working examples:
+
+- **BasicExample.tsx** - Simple table with essential features
+- **AdvancedExample.tsx** - Complete feature showcase (column config, validation, row coloring, etc.)
+- **ValidationExample.tsx** - Comprehensive validation demonstration
+- **DemoApp.tsx** - All examples in a tabbed interface
+
+To run the examples:
+
+```bash
+# Copy example to your React project
+cp node_modules/handsontable-editor/examples/BasicExample.tsx src/
+
+# Or import directly
+import { DemoApp } from 'handsontable-editor/examples';
+```
+
+See [examples/README.md](./examples/README.md) for detailed usage instructions.
+
 ## API Reference (Extended)
 
 ### Validation
