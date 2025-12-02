@@ -32,6 +32,53 @@ export {
   type ContextMenuOptions,
 } from './utils/contextMenu';
 
+// Validation utilities
+export {
+  clearCellError,
+  clearCellErrorRange,
+  clearCellHighlights,
+  highlightInvalidCellsBulletproof,
+  highlightRowErrorById,
+  validateDate,
+  validateNumericValue,
+  validateContainerISO,
+  isEmpty,
+  addErrorClass,
+  removeErrorClass,
+  getColumnIndexBulletproof,
+  ERROR_CELL_CLASS,
+  type ValidationResult,
+  type CellError,
+  type DetailedValidationResult,
+} from './utils/validation';
+
+// Bulk operations utilities
+export {
+  handleBulkOperations,
+  createEmptyRow,
+  clearRowField,
+  clearRowFields,
+  batchUpdateCells,
+  duplicateRowAt,
+  deleteRowsByIndices,
+  getSelectedRowIndices,
+  getSelectedRowsData,
+  colorSelectedRows,
+} from './utils/bulkOperations';
+
+// Autofill handler
+export {
+  createAutofillHandler,
+  useAutofillHandler,
+  type AutofillHandlerOptions,
+} from './utils/autofillHandler';
+
+// Hooks
+export {
+  useColumnConfig,
+  useColumnResize,
+} from './hooks';
+
 // Components
 export * from './components/common';
 export {
@@ -52,6 +99,13 @@ export {
   getRowStatus,
 } from './components/statusRow';
 export type { StatusRowColumnProps } from './components/statusRow';
+
+// UI Components
+export { TableContainer, type TableContainerProps } from './components/TableContainer';
+export { ColumnConfig } from './components/ColumnConfig';
+export { ColorPicker, type ColorPickerProps } from './components/ColorPicker';
+export { DuplicateMultiRow, type DuplicateMultiRowProps } from './components/DuplicateMultiRow';
+export { SelectCountRow, type SelectCountRowProps } from './components/SelectCountRow';
 
 // Config
 export * from './config/tableConfig';

@@ -43,6 +43,13 @@ registerAllModules();
 - **Common Column Types**: Text, numeric, boolean, action, and common column creators
 - **Table Configuration**: Pre-configured Handsontable settings
 - **Utilities**: Helper functions for date formatting, sorting, and more
+- **Advanced Validation**: Cell-level error highlighting with tooltips and ISO container validation
+- **Column Management**: Show/hide columns, freeze columns, persistent column widths
+- **Bulk Operations**: Batch updates, duplicate rows, delete multiple rows
+- **Autofill Handler**: Advanced autofill with ID field mapping and field dependencies
+- **UI Components**: TableContainer, ColorPicker, ColumnConfig, DuplicateMultiRow, SelectCountRow
+- **Row Coloring**: Visual row highlighting with custom colors
+- **Hooks**: useColumnConfig, useColumnResize for state management
 
 ## Quick Start (Simplest Way)
 
@@ -416,6 +423,286 @@ import 'handsontable-editor/dist/styles.css';
 ```
 
 You can override styles using CSS variables or by targeting the class names directly.
+
+## Advanced Features
+
+### TableContainer Component
+
+Comprehensive container with toolbar, loading state, and action buttons:
+
+```tsx
+import { TableContainer, useColumnConfig, useColumnResize } from 'handsontable-editor';
+
+function MyTable() {
+  const hotTableRef = useRef(null);
+  const [data, setData] = useState([...]);
+  
+  const { tableColumns, handleColumnsChange, handleResetColumns, pendingColumns, handleApplyChanges, handleCancelChanges } = 
+    useColumnConfig({
+      baseTableColumns: columns,
+      hotTableRef,
+      storageKey: 'my-table-columns'
+    });
+  
+  const { manualColumnResize, handleAfterColumnResize, resetColumnWidths } = 
+    useColumnResize({
+      columnSettings: tableColumns,
+      hotTableRef,
+      storageKey: 'my-table-widths'
+    });
+  
+  const settings = createTableSettings({
+    data,
+    columns: tableColumns,
+    afterChange: handleAfterChange,
+    manualColumnResize,
+    afterColumnResize: handleAfterColumnResize,
+  });
+  
+  return (
+    <TableContainer
+      hotTableRef={hotTableRef}
+      tableSettings={settings}
+      isPending={isLoading}
+      tableColumns={tableColumns}
+      onColumnsChange={handleColumnsChange}
+      onReset={() => {
+        handleResetColumns();
+        resetColumnWidths();
+      }}
+      onAddNewRow={handleAddNewRow}
+      onColorSelectedRows={handleColorSelectedRows}
+      pendingColumns={pendingColumns}
+      onApplyChanges={handleApplyChanges}
+      onCancelChanges={handleCancelChanges}
+    />
+  );
+}
+```
+
+### Validation System
+
+Advanced cell-level validation with error highlighting:
+
+```tsx
+import { 
+  validateDate, 
+  validateNumericValue, 
+  highlightInvalidCellsBulletproof,
+  clearCellHighlights,
+  validateContainerISO,
+  type CellError 
+} from 'handsontable-editor';
+
+// Validate and highlight errors
+const errors: CellError[] = [];
+
+// Validate required fields
+if (!row.name) {
+  errors.push({ row: rowIndex, col: 'name', message: 'Name is required' });
+}
+
+// Validate dates
+const dateErrors = validateDate(row.date, 'planDate');
+if (dateErrors.length > 0) {
+  errors.push({ row: rowIndex, col: 'date', message: dateErrors[0] });
+}
+
+// Validate ISO container number
+if (row.containerNo && !validateContainerISO(row.containerNo)) {
+  errors.push({ row: rowIndex, col: 'containerNo', message: 'Invalid container number (ISO 6346)' });
+}
+
+// Highlight errors in table
+if (errors.length > 0) {
+  highlightInvalidCellsBulletproof(hotInstance, errors);
+} else {
+  clearCellHighlights(hotInstance);
+}
+```
+
+### Bulk Operations
+
+Efficient batch operations for better performance:
+
+```tsx
+import {
+  handleBulkOperations,
+  batchUpdateCells,
+  colorSelectedRows,
+  getSelectedRowsData,
+  duplicateRowAt,
+} from 'handsontable-editor';
+
+// Batch update multiple cells
+batchUpdateCells(hotInstance, [
+  [0, 'name', 'John'],
+  [0, 'age', 30],
+  [1, 'name', 'Jane'],
+]);
+
+// Color selected rows
+colorSelectedRows(hotInstance, '#ffcccc');
+
+// Get selected rows data
+const selectedData = getSelectedRowsData(hotInstance);
+
+// Duplicate row
+duplicateRowAt(hotInstance, 2);
+```
+
+### Autofill Handler
+
+Advanced autofill with ID field mapping:
+
+```tsx
+import { createAutofillHandler } from 'handsontable-editor';
+
+const handleAfterAutofill = createAutofillHandler({
+  hotInstance,
+  idFieldMap: {
+    consigneeName: 'consigneeId',
+    driverName: 'driverId',
+  },
+  fieldDependencies: {
+    forwarderName: ['driverName', 'truckName'],
+  },
+  useBatchedChanges: true,
+});
+
+const settings = createTableSettings({
+  // ... other settings
+  afterAutofill: handleAfterAutofill,
+});
+```
+
+### Column Configuration Hook
+
+Manage column visibility and freezing:
+
+```tsx
+import { useColumnConfig } from 'handsontable-editor';
+
+const {
+  tableColumns,
+  tableSettings,
+  handleColumnsChange,
+  handleResetColumns,
+  pendingColumns,
+  handleApplyChanges,
+  handleCancelChanges,
+} = useColumnConfig({
+  baseTableColumns: columns,
+  hotTableRef,
+  storageKey: 'my-app-columns-user123',
+});
+```
+
+### Column Resize Hook
+
+Persist column widths:
+
+```tsx
+import { useColumnResize } from 'handsontable-editor';
+
+const {
+  manualColumnResize,
+  handleAfterColumnResize,
+  resetColumnWidths,
+} = useColumnResize({
+  columnSettings: tableColumns,
+  hotTableRef,
+  storageKey: 'my-app-widths-user123',
+});
+```
+
+### UI Components
+
+#### ColorPicker
+
+```tsx
+import { ColorPicker } from 'handsontable-editor';
+
+<ColorPicker
+  value="#ffffff"
+  onChange={(color) => colorSelectedRows(hotInstance, color)}
+  size="middle"
+/>
+```
+
+#### DuplicateMultiRow
+
+```tsx
+import { DuplicateMultiRow } from 'handsontable-editor';
+
+<DuplicateMultiRow
+  hotTableRef={hotTableRef}
+  maxDuplicates={100}
+  buttonText="Duplicate"
+/>
+```
+
+#### SelectCountRow
+
+```tsx
+import { SelectCountRow } from 'handsontable-editor';
+
+<SelectCountRow
+  hotInstance={hotInstance}
+  label="Selected"
+/>
+```
+
+## API Reference (Extended)
+
+### Validation
+
+#### `validateContainerISO(containerNumber: string): boolean`
+
+Validates container number against ISO 6346 standard.
+
+#### `highlightInvalidCellsBulletproof(hotInstance, cellErrors: CellError[]): void`
+
+Highlights invalid cells with error class and tooltips. Scrolls to first error.
+
+#### `clearCellHighlights(hotInstance): void`
+
+Clears all cell error highlighting.
+
+#### `highlightRowErrorById(hotInstance, rowIds: string[], rowColor?: string): void`
+
+Highlights entire rows by ID/UUID with specified color.
+
+### Bulk Operations
+
+#### `batchUpdateCells(hotInstance, updates: [row, prop, value][]): void`
+
+Updates multiple cells in a single batch operation.
+
+#### `colorSelectedRows(hotInstance, color: string, colorField?: string): void`
+
+Colors all selected rows with specified color.
+
+#### `getSelectedRowsData<T>(hotInstance): T[]`
+
+Returns data for all selected rows.
+
+#### `duplicateRowAt(hotInstance, rowIndex: number): void`
+
+Duplicates row at specified index.
+
+### Autofill
+
+#### `createAutofillHandler(options: AutofillHandlerOptions): Function`
+
+Creates autofill handler with ID field mapping and dependencies.
+
+**Options:**
+- `hotInstance` - Handsontable instance
+- `idFieldMap` - Map name fields to ID fields
+- `fieldDependencies` - Fields to clear when parent changes
+- `onFieldCopied` - Callback after field is copied
+- `useBatchedChanges` - Use batch operations (default: true)
 
 ## License
 

@@ -28,6 +28,7 @@
       padding: 0px !important;
       .colHeader {
         display: block;
+        // min-width:60px;
         padding: 0px !important;
         text-align: center !important;
         margin: 0 auto;
@@ -45,6 +46,8 @@
     .required {
       border-left: 3px solid #fff2f0 !important;
     }
+
+    // Style entire rows that contain error cells
     tr:has(td.row-error-data) {
       background-color: #fff2f0 !important;
 
@@ -99,6 +102,7 @@
   }
 }
 
+// Invalid row highlighting styles
 .handsontable {
   .htInvalidRow {
     background-color: #fff2f0 !important;
@@ -143,7 +147,10 @@
   visibility: hidden;
 }
 
+// ... existing code ...
+
 .readonly-table {
+  // Force text selection to work
   td {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
