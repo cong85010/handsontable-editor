@@ -876,7 +876,7 @@ Contributions welcome! Please:
 
 ## 📄 License
 
-MIT © [Your Name]
+MIT © [Cong Phan]
 
 ---
 
