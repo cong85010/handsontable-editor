@@ -22,27 +22,35 @@ This workflow automatically publishes the package to npm when a version tag is p
 
 #### Automatic Publishing (Recommended)
 
-1. Update the version in `package.json`:
+1. **Ensure lockfile is up to date:**
+   ```bash
+   pnpm install
+   git add pnpm-lock.yaml
+   git commit -m "chore: update lockfile"
+   ```
+
+2. Update the version in `package.json`:
    ```json
    {
      "version": "2.1.0"
    }
    ```
 
-2. Commit and push the changes:
+3. Commit and push the changes:
    ```bash
    git add package.json
    git commit -m "chore: bump version to 2.1.0"
    git push
    ```
 
-3. Create and push a version tag:
+4. Create and push a version tag:
    ```bash
    git tag v2.1.0
    git push origin v2.1.0
    ```
 
    The workflow will automatically:
+   - Verify the lockfile is in sync with package.json
    - Verify the version matches the tag
    - Build the package
    - Publish to npm
@@ -69,9 +77,30 @@ The workflow ensures that:
 - Build artifacts are generated successfully
 - Only valid versions are published
 
+### Troubleshooting
+
+#### Lockfile Out of Sync Error
+
+If you see an error like `Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date`, it means your lockfile doesn't match your `package.json`. To fix:
+
+```bash
+# Update the lockfile
+pnpm install
+
+# Commit the updated lockfile
+git add pnpm-lock.yaml
+git commit -m "chore: update lockfile"
+git push
+
+# Then create your tag
+git tag v2.1.0
+git push origin v2.1.0
+```
+
 ### Notes
 
-- The workflow uses `pnpm` as the package manager
+- The workflow uses `pnpm` version 9 (matches lockfile format)
 - Build runs automatically before publish (via `prepublishOnly` script)
 - Published package includes: `dist/`, `src/`, and `examples/` directories
+- Always ensure `pnpm-lock.yaml` is committed and up to date before creating release tags
 
