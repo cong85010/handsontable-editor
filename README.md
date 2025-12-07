@@ -891,7 +891,7 @@ If you find this library useful, please star it on GitHub! ⭐
 - 📖 [Documentation](./README.md)
 - 🐛 [Issue Tracker](https://github.com/yourusername/handsontable-editor/issues)
 - 💬 [Discussions](https://github.com/yourusername/handsontable-editor/discussions)
-- 📧 [Email](mailto:your@email.com)
+- 📧 [Email](mailto:cong85010@gmail.com)
 
 ---
 
